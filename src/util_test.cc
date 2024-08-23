@@ -561,3 +561,37 @@ TEST(ElideMiddle, ElideAnsiEscapeCodes) {
   EXPECT_EQ("ab...\x1B[31mA\x1B[0mBC", ElideMiddle(input, 8));
   EXPECT_EQ("abcdef\x1b[31mA\x1b[0mBC", ElideMiddle(input, 9));
 }
+
+#ifdef _WIN32
+TEST(UTF8ToWin32Unicode, UTF8ToWin32Unicode) {
+  static const struct {
+    const char* input;
+    const wchar_t* expected;
+  } kData[] = {
+    { "foo", L"foo" },
+    { "foo/bar", L"foo/bar" },
+    { "\x62\xc3\xa9\x62\xc3\xa9", L"\u0062\u00e9\u0062\u00e9" },  // bébé
+  };
+  for (const auto& data : kData) {
+    std::string input = data.input;
+    std::wstring expected = data.expected;
+    EXPECT_EQ(expected, UTF8ToWin32Unicode(input)) << input;
+  }
+}
+
+TEST(Win32UnicodeToUTF8, Win32UnicodeToUTF8) {
+  static const struct {
+    const wchar_t* input;
+    const char* expected;
+  } kData[] = {
+    { L"foo", "foo" },
+    { L"foo/bar", "foo/bar" },
+    { L"\u0062\u00e9\u0062\u00e9", "\x62\xc3\xa9\x62\xc3\xa9" },  // bébé
+  };
+  for (const auto& data : kData) {
+    std::wstring input = data.input;
+    std::string expected = data.expected;
+    EXPECT_EQ(expected, Win32UnicodeToUTF8(input)) << input;
+  }
+}
+#endif  // _WIN32
