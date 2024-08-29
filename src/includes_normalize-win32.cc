@@ -36,10 +36,17 @@ std::wstring InternalGetFullPathName(StringPiece file_name, std::string* err) {
     *err = "GetFullPathNameW(" + file_name.AsString() +
            "): " + GetLastErrorString();
   } else {
-    // NOTE: len counts one character for the terminating L'\0'.
+    // NOTE: len counts one character for the terminating L'\0' when we pass
+    // NULL above. with the second call below the returned length will _not_
+    // count the terminating null.
+    //
+    // NOTE: unclear why, but the first GetFullPathNameW call above will return
+    // a larger length value than necessary, we need to resize again with the
+    // correct length returned by the second call.
     result.resize(static_cast<size_t>(len) - 1);
-    GetFullPathNameW(wide_filename.c_str(), len,
-                     const_cast<wchar_t*>(result.data()), NULL);
+    DWORD len_final = GetFullPathNameW(
+        wide_filename.c_str(), len, const_cast<wchar_t*>(result.data()), NULL);
+    result.resize(static_cast<size_t>(len_final));
   }
   return result;
 }
